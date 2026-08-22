@@ -1,0 +1,798 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>세계 도시 탐험대</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#eaf6ff;
+    --bg2:#fff6e0;
+    --panel:#ffffff;
+    --paper:#26314a;
+    --paper-line:#ffd166;
+    --gold:#ff9f1c;
+    --gold-soft:#ffd166;
+    --ink:#33344a;
+    --ink-dim:#6b7280;
+    --finance:#1e96fc;
+    --history:#ef476f;
+    --eco:#06a77d;
+    --industry:#a66bff;
+    --danger:#ff4d6d;
+    --line:#e7edf7;
+    --line2:#dbe6f5;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(circle at 12% 0%, #fff1b8 0%, transparent 42%),
+      radial-gradient(circle at 88% 6%, #ffd6e8 0%, transparent 46%),
+      radial-gradient(circle at 50% 100%, #d7f4ff 0%, transparent 55%),
+      linear-gradient(180deg, #eaf6ff 0%, #f7fbff 55%, #ffffff 100%);
+    color:var(--ink);
+    font-family:'Noto Sans KR', sans-serif;
+    min-height:100vh;
+    overflow-x:hidden;
+  }
+  .display{font-family:'Gowun Batang', serif;}
+  #app{max-width:1000px;margin:0 auto;padding:20px 18px 60px;position:relative;}
+
+  /* ---------- topbar ---------- */
+  .topbar{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:10px 18px;border:1px solid var(--line2);border-radius:14px;
+    background:rgba(255,255,255,0.75);margin-bottom:22px;
+    box-shadow:0 4px 18px rgba(30,80,160,.06);
+    backdrop-filter: blur(6px);
+  }
+  .brand{display:flex;align-items:center;gap:10px;cursor:pointer;}
+  .brand .compass{width:30px;height:30px;flex:none;}
+  .brand span{font-family:'Gowun Batang',serif;font-size:1.15rem;font-weight:700;letter-spacing:.5px;color:var(--history);}
+  .topbar .status{font-size:.82rem;color:var(--ink-dim);text-align:right;}
+  .topbar .status b{color:var(--gold);}
+
+  .compass{animation:spin 18s linear infinite;}
+  @keyframes spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+
+  /* ---------- screen mgmt ---------- */
+  .screen{display:none;}
+  .screen.active{display:block;animation:fadein .35s ease;}
+  @keyframes fadein{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+
+  /* ---------- home ---------- */
+  .hero{text-align:center;padding:10px 10px 30px;}
+  .hero h1{font-family:'Gowun Batang',serif;font-size:2.1rem;margin:6px 0 8px;color:var(--paper);
+    text-shadow:0 2px 0 rgba(255,209,102,.5);}
+  .hero p{color:var(--ink-dim);font-size:.95rem;max-width:520px;margin:0 auto;line-height:1.6;}
+
+  .stagegrid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:22px;}
+  @media (max-width:720px){.stagegrid{grid-template-columns:1fr;}}
+
+  .stagecard{
+    position:relative;border-radius:18px;padding:22px 18px 20px;
+    background:linear-gradient(160deg,var(--panel),var(--bg2));
+    border:1px solid var(--line2);cursor:pointer;transition:transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+    overflow:hidden;box-shadow:0 6px 20px rgba(30,80,160,.07);
+  }
+  .stagecard:hover{transform:translateY(-4px);border-color:var(--gold);box-shadow:0 14px 30px rgba(255,159,28,.18);}
+  .stagecard.locked{cursor:not-allowed;opacity:.6;filter:grayscale(.35);}
+  .stagecard.locked:hover{transform:none;box-shadow:0 6px 20px rgba(30,80,160,.07);border-color:var(--line2);}
+  .stagecard .stamp{
+    position:absolute;top:12px;right:12px;width:56px;height:56px;border-radius:50%;
+    border:2px dashed var(--gold);display:flex;align-items:center;justify-content:center;
+    transform:rotate(12deg);color:var(--gold);font-size:.68rem;font-weight:700;text-align:center;line-height:1.1;
+    opacity:.9;background:rgba(255,159,28,.06);
+  }
+  .stagecard.cleared .stamp{border-style:solid;background:rgba(6,167,125,.12);border-color:var(--eco);color:var(--eco);}
+  .stagecard h3{font-family:'Gowun Batang',serif;font-size:1.15rem;margin:0 0 6px;color:var(--paper);}
+  .stagecard .stars{color:var(--gold);letter-spacing:2px;font-size:1rem;margin-bottom:10px;}
+  .stagecard p{font-size:.85rem;color:var(--ink-dim);line-height:1.55;margin:0 0 14px;min-height:64px;}
+  .stagecard .go{
+    display:inline-flex;align-items:center;gap:6px;font-size:.82rem;font-weight:700;
+    color:#5a3b00;background:var(--gold-soft);padding:7px 14px;border-radius:999px;
+  }
+  .stagecard.locked .go{background:#e7edf7;color:var(--ink-dim);}
+  .lock-note{position:absolute;bottom:16px;left:18px;right:18px;font-size:.75rem;color:var(--ink-dim);}
+
+  .legend{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin-top:26px;}
+  .legend span{display:flex;align-items:center;gap:6px;font-size:.78rem;color:var(--ink-dim);
+    border:1px solid var(--line2);padding:5px 11px;border-radius:999px;background:#ffffff;}
+  .legend i{width:10px;height:10px;border-radius:50%;display:inline-block;}
+
+  /* ---------- generic panel ---------- */
+  .panel{
+    background:linear-gradient(160deg,var(--panel),var(--bg2));
+    border:1px solid var(--line2);border-radius:18px;padding:22px;
+    box-shadow:0 10px 30px rgba(30,80,160,.08);
+  }
+  .panel-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px;}
+  .panel-head h2{font-family:'Gowun Batang',serif;font-size:1.35rem;margin:0;color:var(--paper);}
+  .backbtn{background:#fff;border:1px solid var(--line2);color:var(--ink-dim);padding:6px 13px;border-radius:999px;
+    font-size:.8rem;cursor:pointer;font-family:inherit;}
+  .backbtn:hover{border-color:var(--gold);color:var(--gold);}
+
+  .progressbar{height:8px;border-radius:999px;background:var(--line);overflow:hidden;margin:4px 0 20px;border:1px solid var(--line2);}
+  .progressbar > div{height:100%;background:linear-gradient(90deg,var(--gold),var(--gold-soft));transition:width .3s ease;}
+
+  .scorepill{font-size:.8rem;background:#fff8e8;border:1px solid var(--paper-line);padding:5px 12px;border-radius:999px;color:#8a5a00;}
+
+  /* ---------- stage1 ---------- */
+  .s1-wrap{display:flex;flex-direction:column;align-items:center;gap:18px;}
+  .cityframe{
+    width:250px;height:250px;border-radius:16px;
+    background:linear-gradient(180deg,#bfe7ff 0%, #eaf6ff 60%, #fff6e0 100%);
+    border:3px solid var(--paper-line);box-shadow:0 10px 26px rgba(30,80,160,.15), inset 0 0 0 6px rgba(255,255,255,.4);
+    display:flex;align-items:center;justify-content:center;position:relative;
+  }
+  .cityframe::before{content:"";position:absolute;inset:8px;border:1px dashed rgba(38,49,74,.18);border-radius:10px;pointer-events:none;z-index:2;}
+  .cityframe img{width:100%;height:100%;object-fit:cover;border-radius:12px;position:relative;}
+  .options{display:grid;grid-template-columns:1fr 1fr;gap:12px;width:100%;max-width:520px;}
+  @media (max-width:480px){.options{grid-template-columns:1fr;}}
+  .opt{
+    font-family:'Noto Sans KR',sans-serif;font-size:.92rem;font-weight:500;
+    padding:14px 10px;border-radius:12px;border:1px solid var(--line2);background:#ffffff;color:var(--ink);
+    cursor:pointer;transition:all .15s ease;box-shadow:0 2px 8px rgba(30,80,160,.05);
+  }
+  .opt:hover{border-color:var(--gold);background:#fff8e8;}
+  .opt.correct{background:rgba(6,167,125,.14);border-color:var(--eco);color:#046651;}
+  .opt.wrong{background:rgba(255,77,109,.12);border-color:var(--danger);color:#a3123a;}
+  .opt:disabled{cursor:default;}
+  .feedback{min-height:22px;font-size:.85rem;font-weight:700;}
+  .feedback.ok{color:var(--eco);}
+  .feedback.bad{color:var(--danger);}
+
+  /* ---------- stage2 ---------- */
+  .s2-top{display:flex;flex-direction:column;align-items:center;gap:8px;margin-bottom:14px;}
+  .falling-wrap{width:220px;height:56px;overflow:hidden;position:relative;border:1px solid var(--line2);border-radius:12px;background:#f4f9ff;}
+  .falling-name{
+    position:absolute;left:0;right:0;top:-40px;text-align:center;font-family:'Gowun Batang',serif;
+    font-size:1.25rem;font-weight:700;color:var(--finance);
+    animation:fall linear forwards;
+  }
+  @keyframes fall{from{top:-40px;}to{top:60px;}}
+  .timerbar{width:220px;height:6px;border-radius:999px;background:var(--line);overflow:hidden;border:1px solid var(--line2);}
+  .timerbar>div{height:100%;background:linear-gradient(90deg,var(--danger),var(--gold-soft));width:100%;}
+  .maphint{font-size:.78rem;color:var(--ink-dim);text-align:center;}
+  .mapwrap{width:100%;border-radius:14px;overflow:hidden;border:1px solid var(--line2);background:#bfe7ff;}
+  #worldmap{width:100%;display:block;cursor:crosshair;}
+  .s2feedback{text-align:center;font-size:.85rem;font-weight:700;min-height:22px;margin-top:8px;}
+
+  /* ---------- stage3 ---------- */
+  .s3-top{display:flex;gap:20px;align-items:center;flex-wrap:wrap;margin-bottom:16px;}
+  .s3-card{
+    width:150px;height:150px;border-radius:14px;flex:none;
+    background:linear-gradient(180deg,#bfe7ff 0%, #eaf6ff 60%, #fff6e0 100%);
+    border:3px solid var(--paper-line);display:flex;align-items:center;justify-content:center;
+  }
+  .s3-card{overflow:hidden;}
+  .s3-card img{width:100%;height:100%;object-fit:cover;border-radius:10px;}
+  .s3-info h3{font-family:'Gowun Batang',serif;font-size:1.4rem;margin:0 0 4px;color:var(--paper);}
+  .s3-info p{margin:0;font-size:.82rem;color:var(--ink-dim);}
+  .catbtns{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px;}
+  @media (max-width:640px){.catbtns{grid-template-columns:1fr 1fr;}}
+  .catbtn{
+    padding:13px 8px;border-radius:12px;border:2px solid var(--c,var(--line2));background:#ffffff;
+    color:var(--ink);font-family:'Noto Sans KR',sans-serif;font-size:.85rem;font-weight:700;cursor:pointer;
+    transition:all .15s ease;
+  }
+  .catbtn:hover{background:color-mix(in srgb, var(--c) 18%, white);}
+  .catbtn.shake{animation:shake .35s;}
+  @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+
+  .sortgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;}
+  @media (max-width:640px){.sortgrid{grid-template-columns:1fr 1fr;}}
+  .sortcol{border-radius:12px;border:1px solid var(--line2);background:#f7fbff;padding:10px;min-height:150px;}
+  .sortcol h4{margin:0 0 8px;font-size:.78rem;text-align:center;padding-bottom:6px;border-bottom:1px dashed var(--line2);color:var(--c);}
+  .chip{
+    display:inline-block;margin:3px;padding:5px 10px;border-radius:999px;font-size:.76rem;font-weight:700;
+    background:color-mix(in srgb, var(--c) 20%, #ffffff);color:var(--ink);border:1px solid var(--c);
+  }
+
+  /* ---------- result ---------- */
+  .resultbox{text-align:center;padding:30px 10px;}
+  .resultbox .bigstars{font-size:2rem;color:var(--gold);margin:10px 0;letter-spacing:6px;}
+  .resultbox h2{font-family:'Gowun Batang',serif;font-size:1.6rem;color:var(--paper);margin:0 0 8px;}
+  .resultbox p{color:var(--ink-dim);font-size:.9rem;}
+  .btnrow{display:flex;gap:12px;justify-content:center;margin-top:22px;flex-wrap:wrap;}
+  .btn{
+    font-family:'Noto Sans KR',sans-serif;font-weight:700;font-size:.86rem;padding:11px 22px;border-radius:999px;
+    border:none;cursor:pointer;
+  }
+  .btn.primary{background:linear-gradient(90deg,var(--gold),var(--gold-soft));color:#3a2500;}
+  .btn.ghost{background:#fff;border:1px solid var(--line2);color:var(--ink-dim);}
+  .btn:hover{filter:brightness(1.06);}
+
+  .toast{
+    position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(20px);
+    background:#ffffff;border:1px solid var(--gold);color:#8a5a00;padding:10px 18px;border-radius:999px;
+    font-size:.82rem;opacity:0;transition:all .25s ease;pointer-events:none;z-index:50;
+    box-shadow:0 8px 22px rgba(30,80,160,.15);
+  }
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+  /* ---------- effects: rainbow celebrate / thunderstorm ---------- */
+  .fx-layer{position:fixed;inset:0;pointer-events:none;z-index:9999;overflow:hidden;}
+  .fx-rainbow-sweep{
+    position:absolute;inset:-30%;opacity:0;mix-blend-mode:normal;
+    background:conic-gradient(from 0deg, #ff595e,#ffca3a,#8ac926,#1982c4,#6a4c93,#ff8fab,#ff595e);
+    filter:blur(2px);
+    animation:fx-sweep 1.3s ease-out forwards;
+  }
+  @keyframes fx-sweep{0%{opacity:0;transform:scale(.6) rotate(0deg);}25%{opacity:.5;}100%{opacity:0;transform:scale(1.5) rotate(50deg);}}
+  .fx-confetti{position:absolute;top:-20px;opacity:.95;border-radius:2px;animation-name:fx-fall;animation-timing-function:ease-in;animation-fill-mode:forwards;}
+  @keyframes fx-fall{to{transform:translateY(110vh) rotate(540deg);opacity:.4;}}
+  .fx-flash{position:absolute;inset:0;background:#eef3ff;opacity:0;animation:fx-lightning .6s steps(1) 2;}
+  @keyframes fx-lightning{0%{opacity:0;}8%{opacity:.9;}16%{opacity:0;}55%{opacity:.55;}64%{opacity:0;}100%{opacity:0;}}
+  .fx-rain{position:absolute;top:-30px;width:2px;height:22px;background:linear-gradient(#5b9bd5,transparent);animation-name:fx-raindrop;animation-timing-function:linear;animation-fill-mode:forwards;}
+  @keyframes fx-raindrop{to{transform:translateY(110vh);}}
+  .fx-shake{animation:fx-shakeapp .5s;}
+  @keyframes fx-shakeapp{0%,100%{transform:translateX(0)}20%{transform:translateX(-6px)}40%{transform:translateX(6px)}60%{transform:translateX(-4px)}80%{transform:translateX(4px)}}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <div class="topbar">
+    <div class="brand" onclick="goHome()">
+      <svg class="compass" viewBox="0 0 40 40"><circle cx="20" cy="20" r="18" fill="none" stroke="#ff9f1c" stroke-width="1.5"/><path d="M20 6 L24 20 L20 34 L16 20 Z" fill="#ff9f1c" opacity="0.9"/><circle cx="20" cy="20" r="2.5" fill="#ffffff"/></svg>
+      <span>세계 도시 탐험대</span>
+    </div>
+    <div class="status" id="topStatus">1단계부터 시작해보세요</div>
+  </div>
+
+  <!-- HOME -->
+  <div class="screen active" id="screen-home">
+    <div class="hero">
+      <h1 class="display">세계의 도시를 여행하는 지리 여권</h1>
+      <p>사진 · 지도 · 기능을 통해 뉴욕부터 쿠리치바까지, 세계 16개 도시의 얼굴과 위치, 역할을 익혀 보세요. 1단계를 통과해야 2단계가, 2단계를 통과해야 3단계가 열립니다.</p>
+    </div>
+    <div class="stagegrid">
+      <div class="stagecard" id="card-1" onclick="tryEnter(1)">
+        <div class="stamp" id="stamp-1">★☆☆</div>
+        <h3 class="display">1단계 · 도시 얼굴 맞히기</h3>
+        <div class="stars">★☆☆</div>
+        <p>도시의 상징적인 랜드마크 그림을 보고 알맞은 <b>도시명(국가명)</b>을 4개의 보기 중에서 고릅니다. 실행할 때마다 순서가 무작위로 바뀝니다.</p>
+        <span class="go">시작하기 →</span>
+      </div>
+      <div class="stagecard locked" id="card-2" onclick="tryEnter(2)">
+        <div class="stamp" id="stamp-2">★★☆</div>
+        <h3 class="display">2단계 · 세계지도 위치 찾기</h3>
+        <div class="stars">★★☆</div>
+        <p>위에서 떨어지는 도시 이름을 보고 세계지도에서 알맞은 위치를 클릭합니다. 맞히면 도시의 기능에 따라 다른 색의 동그라미가 지도에 표시됩니다.</p>
+        <span class="go">시작하기 →</span>
+        <div class="lock-note">🔒 1단계를 통과하면 열립니다</div>
+      </div>
+      <div class="stagecard locked" id="card-3" onclick="tryEnter(3)">
+        <div class="stamp" id="stamp-3">★★★</div>
+        <h3 class="display">3단계 · 도시 기능 분류하기</h3>
+        <div class="stars">★★★</div>
+        <p>도시 이름과 그림을 보고 그 도시의 핵심 <b>기능</b>을 고릅니다. 맞힐 때마다 도시들이 4가지 기능별로 색깔이 다른 이름표로 실시간 분류됩니다.</p>
+        <span class="go">시작하기 →</span>
+        <div class="lock-note">🔒 2단계를 통과하면 열립니다</div>
+      </div>
+    </div>
+    <div class="legend">
+      <span><i style="background:var(--finance)"></i>국제 금융·업무 도시</span>
+      <span><i style="background:var(--history)"></i>역사와 문화 도시</span>
+      <span><i style="background:var(--eco)"></i>환경과 생태 도시</span>
+      <span><i style="background:var(--industry)"></i>산업 및 물류 도시</span>
+    </div>
+    <p style="text-align:center;color:var(--ink-dim);font-size:.72rem;margin-top:18px;">사진 출처: Wikimedia Commons (자유 이용 라이선스)</p>
+  </div>
+
+  <!-- STAGE 1 -->
+  <div class="screen" id="screen-stage1">
+    <div class="panel">
+      <div class="panel-head">
+        <h2 class="display">1단계 · 이 도시는 어디일까요?</h2>
+        <button class="backbtn" onclick="goHome()">← 여권으로</button>
+      </div>
+      <div class="progressbar"><div id="s1-progress" style="width:0%"></div></div>
+      <div class="s1-wrap">
+        <div class="cityframe" id="s1-frame"></div>
+        <div class="feedback" id="s1-feedback"></div>
+        <div class="options" id="s1-options"></div>
+        <div class="scorepill" id="s1-score">점수 0 / 0</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STAGE 2 -->
+  <div class="screen" id="screen-stage2">
+    <div class="panel">
+      <div class="panel-head">
+        <h2 class="display">2단계 · 지도에서 도시를 찾아보세요</h2>
+        <button class="backbtn" onclick="goHome()">← 여권으로</button>
+      </div>
+      <div class="progressbar"><div id="s2-progress" style="width:0%"></div></div>
+      <div class="s2-top">
+        <div class="falling-wrap"><div class="falling-name" id="s2-fallname">뉴욕</div></div>
+        <div class="timerbar"><div id="s2-timer"></div></div>
+        <div class="maphint">지도 위 해당 도시의 위치를 클릭하세요 (근처면 정답으로 인정돼요)</div>
+        <div class="scorepill" id="s2-score">점수 0 / 0</div>
+      </div>
+      <div class="mapwrap">
+        <svg id="worldmap" viewBox="0 0 1000 500" xmlns="http://www.w3.org/2000/svg"></svg>
+      </div>
+      <div class="s2feedback" id="s2-feedback"></div>
+    </div>
+  </div>
+
+  <!-- STAGE 3 -->
+  <div class="screen" id="screen-stage3">
+    <div class="panel">
+      <div class="panel-head">
+        <h2 class="display">3단계 · 이 도시의 기능은 무엇일까요?</h2>
+        <button class="backbtn" onclick="goHome()">← 여권으로</button>
+      </div>
+      <div class="progressbar"><div id="s3-progress" style="width:0%"></div></div>
+      <div class="s3-top">
+        <div class="s3-card" id="s3-frame"></div>
+        <div class="s3-info">
+          <h3 class="display" id="s3-name">도시 이름</h3>
+          <p id="s3-hint">이 도시의 핵심 기능을 아래에서 골라보세요.</p>
+          <div class="scorepill" id="s3-score" style="margin-top:8px;display:inline-block;">점수 0 / 0</div>
+        </div>
+      </div>
+      <div class="catbtns" id="s3-catbtns"></div>
+      <div class="sortgrid" id="s3-sortgrid"></div>
+    </div>
+  </div>
+
+  <!-- RESULT (shared) -->
+  <div class="screen" id="screen-result">
+    <div class="panel resultbox">
+      <div class="bigstars" id="r-stars">★★★</div>
+      <h2 class="display" id="r-title">단계 완료!</h2>
+      <p id="r-desc">결과를 확인하세요.</p>
+      <div class="btnrow" id="r-buttons"></div>
+    </div>
+  </div>
+
+  <!-- COMPLETE -->
+  <div class="screen" id="screen-complete">
+    <div class="panel resultbox">
+      <div class="bigstars">🌍</div>
+      <h2 class="display">축하합니다! 세계 도시 여권을 완성했어요</h2>
+      <p>16개 도시의 모습, 위치, 기능을 모두 익혔습니다. 아래에서 완성된 여권 지도를 다시 볼 수 있어요.</p>
+      <div class="btnrow">
+        <button class="btn primary" onclick="goHome()">여권으로 돌아가기</button>
+        <button class="btn ghost" onclick="resetAll()">처음부터 다시하기</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+</div>
+
+<script>
+/* ==================== DATA ==================== */
+const CATS = {
+  finance:  {label:'국제 금융·업무 도시', color:'var(--finance)', hex:'#2e86ab'},
+  history:  {label:'역사와 문화 도시',    color:'var(--history)', hex:'#c0464b'},
+  eco:      {label:'환경과 생태 도시',    color:'var(--eco)',     hex:'#2fa84f'},
+  industry: {label:'산업 및 물류 도시',   color:'var(--industry)',hex:'#8e44ad'},
+};
+
+const WM = 'https://commons.wikimedia.org/wiki/Special:FilePath/';
+const CITIES = [
+  {id:'newyork',    name:'뉴욕',        country:'미국',      cat:'finance',  iso:'US', x:589, y:275, photo:WM+encodeURIComponent('Statue of Liberty and a sightseeing boat, Liberty Island, New York.jpg')},
+  {id:'london',     name:'런던',        country:'영국',      cat:'finance',  iso:'GB', x:999, y:214, photo:WM+encodeURIComponent('Big Ben Elizabeth Tower London 2023 01.jpg')},
+  {id:'tokyo',       name:'도쿄',        country:'일본',      cat:'finance',  iso:'JP', x:1776, y:302, photo:WM+encodeURIComponent('Tokyo Tower during daytime.jpg')},
+  {id:'toronto',    name:'토론토',      country:'캐나다',    cat:'finance',  iso:'CA', x:559, y:258, photo:WM+encodeURIComponent('CN Tower, Toronto, Canada9.jpg')},
+  {id:'rome',       name:'로마',        country:'이탈리아',  cat:'history',  iso:'IT', x:1069, y:268, photo:WM+encodeURIComponent('Colosseum in Rome, Italy - April 2007.jpg')},
+  {id:'istanbul',   name:'이스탄불',    country:'튀르키예',  cat:'history',  iso:'TR', x:1161, y:272, photo:WM+encodeURIComponent('Istanbul Hagia Sophia Sultanahmed.JPG')},
+  {id:'barcelona',  name:'바르셀로나',  country:'에스파냐',  cat:'history',  iso:'ES', x:1012, y:270, photo:WM+encodeURIComponent('La Sagrada Familia Barcelona.jpg')},
+  {id:'cairo',      name:'카이로',      country:'이집트',    cat:'history',  iso:'EG', x:1174, y:333, photo:WM+encodeURIComponent('All Gizah Pyramids.jpg')},
+  {id:'freiburg',   name:'프라이부르크',country:'독일',      cat:'eco',      iso:'DE', x:1044, y:234, photo:WM+encodeURIComponent('Freiburg 071ss.jpg')},
+  {id:'curitiba',   name:'쿠리치바',    country:'브라질',    cat:'eco',      iso:'BR', x:726, y:642, photo:WM+encodeURIComponent('Ônibus BRT Curitiba - Pinhais.jpg')},
+  {id:'oslo',       name:'오슬로',      country:'노르웨이',  cat:'eco',      iso:'NO', x:1060, y:167, photo:WM+encodeURIComponent('Oslo Opera House seen from Langkaia.JPG')},
+  {id:'strasbourg', name:'스트라스부르',country:'프랑스',    cat:'eco',      iso:'FR', x:1043, y:230, photo:WM+encodeURIComponent('Strasbourg Cathedral.jpg')},
+  {id:'shanghai',   name:'상하이',      country:'중국',      cat:'industry', iso:'CN', x:1675, y:327, photo:WM+encodeURIComponent('Oriental Pearl Tower 2012.jpg')},
+  {id:'sydney',     name:'시드니',      country:'호주',      cat:'industry', iso:'AU', x:1840, y:689, photo:WM+encodeURIComponent('Exterior of Sydney Opera House.jpg')},
+  {id:'jakarta',    name:'자카르타',    country:'인도네시아',cat:'industry', iso:'ID', x:1594, y:535, photo:WM+encodeURIComponent('Monumen Nasional, Jakarta, Indonesia.jpg')},
+  {id:'houston',    name:'휴스턴',      country:'미국',      cat:'industry', iso:'US', x:470, y:335, photo:WM+encodeURIComponent('Downtown Houston, TX Skyline - 2018.jpg')},
+];
+const byId = id => CITIES.find(c=>c.id===id);
+
+/* ==================== PHOTOS ==================== */
+function photoTag(city){
+  return `<img src="${city.photo}" alt="${city.name}" loading="lazy" onerror="this.onerror=null;this.style.display='none';this.insertAdjacentHTML('afterend','<div style=\\'color:#a9b6d6;font-size:.8rem;text-align:center;padding:10px;\\'>사진을 불러오지 못했어요</div>');">`;
+}
+
+/* ==================== STATE ==================== */
+let progress = {stage1:false, stage2:false, stage3:false};
+let bestScore = {stage1:0, stage2:0, stage3:0};
+
+function shuffle(arr){
+  const a=[...arr];
+  for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}
+  return a;
+}
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  clearTimeout(showToast._t);
+  showToast._t=setTimeout(()=>t.classList.remove('show'),1800);
+}
+
+/* ---------- celebration / storm effects ---------- */
+function confettiPieces(n){
+  const colors=['#ff595e','#ffca3a','#8ac926','#1982c4','#6a4c93','#ff8fab','#06d6a0'];
+  let html='';
+  for(let i=0;i<n;i++){
+    const left=Math.random()*100;
+    const delay=Math.random()*0.35;
+    const dur=1.1+Math.random()*1.0;
+    const color=colors[i%colors.length];
+    const w=6+Math.random()*7;
+    const h=w*0.45;
+    const rot=Math.random()*360;
+    html+=`<div class="fx-confetti" style="left:${left}%;background:${color};width:${w}px;height:${h}px;animation-delay:${delay}s;animation-duration:${dur}s;transform:rotate(${rot}deg);"></div>`;
+  }
+  return html;
+}
+function celebrate(){
+  const layer=document.createElement('div');
+  layer.className='fx-layer';
+  layer.innerHTML=`<div class="fx-rainbow-sweep"></div>${confettiPieces(48)}`;
+  document.body.appendChild(layer);
+  setTimeout(()=>layer.remove(),1700);
+}
+function rainDrops(n){
+  let html='';
+  for(let i=0;i<n;i++){
+    const left=Math.random()*100;
+    const delay=Math.random()*0.5;
+    const dur=0.45+Math.random()*0.35;
+    html+=`<div class="fx-rain" style="left:${left}%;animation-delay:${delay}s;animation-duration:${dur}s;"></div>`;
+  }
+  return html;
+}
+function stormEffect(){
+  const layer=document.createElement('div');
+  layer.className='fx-layer';
+  layer.innerHTML=`<div class="fx-flash"></div>${rainDrops(55)}`;
+  document.body.appendChild(layer);
+  const app=document.getElementById('app');
+  app.classList.add('fx-shake');
+  setTimeout(()=>app.classList.remove('fx-shake'),500);
+  setTimeout(()=>layer.remove(),1200);
+}
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+function goHome(){
+  clearInterval(window._s2timerHandle);
+  refreshHome();
+  showScreen('screen-home');
+}
+function refreshHome(){
+  document.getElementById('card-2').classList.toggle('locked', !progress.stage1);
+  document.getElementById('card-3').classList.toggle('locked', !progress.stage2);
+  document.getElementById('card-1').classList.toggle('cleared', progress.stage1);
+  document.getElementById('card-2').classList.toggle('cleared', progress.stage2);
+  document.getElementById('card-3').classList.toggle('cleared', progress.stage3);
+  document.getElementById('stamp-1').textContent = progress.stage1 ? '통과✓' : '★☆☆';
+  document.getElementById('stamp-2').textContent = progress.stage2 ? '통과✓' : '★★☆';
+  document.getElementById('stamp-3').textContent = progress.stage3 ? '통과✓' : '★★★';
+  const done = [progress.stage1,progress.stage2,progress.stage3].filter(Boolean).length;
+  document.getElementById('topStatus').innerHTML = done===3
+    ? '<b>세계 도시 여권 완성 🌍</b>'
+    : `통과한 단계: <b>${done} / 3</b>`;
+}
+function tryEnter(n){
+  if(n===2 && !progress.stage1){ showToast('먼저 1단계를 통과해야 열립니다.'); return; }
+  if(n===3 && !progress.stage2){ showToast('먼저 2단계를 통과해야 열립니다.'); return; }
+  if(n===1) startStage1();
+  if(n===2) startStage2();
+  if(n===3) startStage3();
+}
+function resetAll(){
+  progress = {stage1:false, stage2:false, stage3:false};
+  bestScore = {stage1:0, stage2:0, stage3:0};
+  goHome();
+}
+function starsFor(ratio){
+  if(ratio>=0.9) return '★★★';
+  if(ratio>=0.7) return '★★☆';
+  if(ratio>=0.4) return '★☆☆';
+  return '☆☆☆';
+}
+function showResult(opts){
+  document.getElementById('r-stars').textContent = opts.stars;
+  document.getElementById('r-title').textContent = opts.title;
+  document.getElementById('r-desc').textContent = opts.desc;
+  const box = document.getElementById('r-buttons');
+  box.innerHTML='';
+  opts.buttons.forEach(b=>{
+    const btn=document.createElement('button');
+    btn.className='btn '+(b.primary?'primary':'ghost');
+    btn.textContent=b.label;
+    btn.onclick=b.onClick;
+    box.appendChild(btn);
+  });
+  showScreen('screen-result');
+}
+
+/* ==================== STAGE 1 ==================== */
+let s1Queue=[], s1Idx=0, s1Score=0, s1Locked=false;
+function startStage1(){
+  s1Queue = shuffle(CITIES).slice(0,7);
+  s1Idx=0; s1Score=0; s1Locked=false;
+  showScreen('screen-stage1');
+  renderS1();
+}
+function renderS1(){
+  if(s1Idx>=s1Queue.length){ finishStage1(); return; }
+  const city = s1Queue[s1Idx];
+  document.getElementById('s1-progress').style.width = (s1Idx/s1Queue.length*100)+'%';
+  document.getElementById('s1-score').textContent = `점수 ${s1Score} / ${s1Idx}`;
+  document.getElementById('s1-feedback').textContent='';
+  document.getElementById('s1-feedback').className='feedback';
+  document.getElementById('s1-frame').innerHTML = photoTag(city);
+
+  const wrongPool = shuffle(CITIES.filter(c=>c.id!==city.id)).slice(0,3);
+  const opts = shuffle([city, ...wrongPool]);
+  const box = document.getElementById('s1-options');
+  box.innerHTML='';
+  s1Locked=false;
+  opts.forEach(o=>{
+    const b=document.createElement('button');
+    b.className='opt';
+    b.textContent = `${o.name}(${o.country})`;
+    b.onclick=()=>answerS1(b,o,city);
+    box.appendChild(b);
+  });
+}
+function answerS1(btn,chosen,correct){
+  if(s1Locked) return;
+  s1Locked=true;
+  document.querySelectorAll('#s1-options .opt').forEach(b=>b.disabled=true);
+  const fb=document.getElementById('s1-feedback');
+  if(chosen.id===correct.id){
+    s1Score++;
+    btn.classList.add('correct');
+    fb.textContent='정답이에요! 👏';
+    fb.className='feedback ok';
+    celebrate();
+  }else{
+    btn.classList.add('wrong');
+    document.querySelectorAll('#s1-options .opt').forEach(b=>{
+      if(b.textContent===`${correct.name}(${correct.country})`) b.classList.add('correct');
+    });
+    fb.textContent=`아쉬워요! 정답은 ${correct.name}(${correct.country})예요.`;
+    fb.className='feedback bad';
+    stormEffect();
+  }
+  setTimeout(()=>{ s1Idx++; renderS1(); }, 1100);
+}
+function finishStage1(){
+  document.getElementById('s1-progress').style.width='100%';
+  const total=s1Queue.length, ratio=s1Score/total;
+  const passed = ratio>=0.7;
+  if(passed){ progress.stage1=true; bestScore.stage1=Math.max(bestScore.stage1,s1Score); }
+  showResult({
+    stars: starsFor(ratio),
+    title: passed ? '1단계 통과! 2단계가 열렸어요' : '1단계 통과 실패',
+    desc: `${total}문제 중 ${s1Score}문제를 맞혔어요. (${Math.round(ratio*100)}%) ${passed?'':'70% 이상 맞히면 통과할 수 있어요. 다시 도전해보세요!'}`,
+    buttons: passed ? [
+      {label:'2단계로 이동', primary:true, onClick:startStage2},
+      {label:'여권으로', primary:false, onClick:goHome},
+    ] : [
+      {label:'다시 도전하기', primary:true, onClick:startStage1},
+      {label:'여권으로', primary:false, onClick:goHome},
+    ]
+  });
+}
+
+/* ==================== STAGE 2 : WORLD MAP ==================== */
+function buildMapSVG(){
+  const svg = document.getElementById('worldmap');
+  const continents = `
+    <rect x="0" y="0" width="1000" height="500" fill="#bfe7ff"/>
+    <path d="M150 80 L280 60 L320 90 L300 150 L260 200 L220 260 L180 280 L140 250 L120 180 L100 120 Z" fill="#c8ecb0"/>
+    <path d="M220 290 L280 300 L300 350 L290 420 L260 470 L230 460 L210 400 L200 340 Z" fill="#c8ecb0"/>
+    <path d="M460 75 L560 65 L595 100 L560 145 L500 145 L465 120 Z" fill="#ffe19a"/>
+    <path d="M470 150 L580 150 L595 220 L575 300 L540 385 L500 395 L465 335 L460 250 Z" fill="#c8ecb0"/>
+    <path d="M560 60 L780 48 L900 100 L905 190 L820 225 L750 205 L680 185 L600 150 Z" fill="#ffe19a"/>
+    <path d="M770 250 L825 245 L835 275 L790 282 Z" fill="#ffe19a"/>
+    <path d="M800 335 L930 325 L940 375 L860 400 L800 385 Z" fill="#c8ecb0"/>
+  `;
+  let dots='';
+  svg.innerHTML = continents + `<g id="map-dots"></g>` + `<g id="map-hitzones" opacity="0"></g>`;
+}
+let s2Queue=[], s2Idx=0, s2Score=0, s2Locked=false;
+function startStage2(){
+  buildMapSVG();
+  s2Queue = shuffle(CITIES);
+  s2Idx=0; s2Score=0; s2Locked=false;
+  showScreen('screen-stage2');
+  const svg=document.getElementById('worldmap');
+  svg.onclick = handleMapClick;
+  renderS2();
+}
+function renderS2(){
+  if(s2Idx>=s2Queue.length){ finishStage2(); return; }
+  document.getElementById('s2-progress').style.width=(s2Idx/s2Queue.length*100)+'%';
+  document.getElementById('s2-score').textContent=`점수 ${s2Score} / ${s2Idx}`;
+  document.getElementById('s2-feedback').textContent='';
+  const city = s2Queue[s2Idx];
+  const nameEl = document.getElementById('s2-fallname');
+  nameEl.textContent = city.name;
+  nameEl.style.animation='none'; void nameEl.offsetWidth;
+  nameEl.style.animation='fall 6.5s linear forwards';
+
+  const timer=document.getElementById('s2-timer');
+  timer.style.transition='none'; timer.style.width='100%'; void timer.offsetWidth;
+  timer.style.transition='width 6.5s linear'; timer.style.width='0%';
+
+  s2Locked=false;
+  clearTimeout(window._s2timeoutHandle);
+  window._s2timeoutHandle = setTimeout(()=>{ if(!s2Locked) missS2(city); }, 6500);
+}
+function handleMapClick(evt){
+  if(s2Locked) return;
+  const svg=document.getElementById('worldmap');
+  const pt=svg.createSVGPoint();
+  pt.x=evt.clientX; pt.y=evt.clientY;
+  const loc = pt.matrixTransform(svg.getScreenCTM().inverse());
+  const city = s2Queue[s2Idx];
+  const d = Math.hypot(loc.x-city.x, loc.y-city.y);
+  if(d<=42){
+    correctS2(city);
+  }else{
+    // check if clicked very near a *different* already-not-yet-placed city (still counts as wrong for target)
+    wrongS2(city, loc);
+  }
+}
+function placeDot(city, dim){
+  const g=document.getElementById('map-dots');
+  const dot=document.createElementNS('http://www.w3.org/2000/svg','circle');
+  dot.setAttribute('cx',city.x); dot.setAttribute('cy',city.y); dot.setAttribute('r', dim?5:7);
+  dot.setAttribute('fill', CATS[city.cat].hex);
+  dot.setAttribute('stroke','#f4efe1'); dot.setAttribute('stroke-width', dim?1:2);
+  if(dim) dot.setAttribute('opacity','0.35');
+  g.appendChild(dot);
+  return dot;
+}
+function correctS2(city){
+  s2Locked=true; clearTimeout(window._s2timeoutHandle);
+  s2Score++;
+  placeDot(city,false);
+  celebrate();
+  const fb=document.getElementById('s2-feedback');
+  fb.textContent = `정답! ${city.name}(${city.country}) 위치를 지도에 표시했어요.`;
+  fb.style.color='var(--eco)';
+  setTimeout(()=>{ s2Idx++; renderS2(); }, 900);
+}
+function wrongS2(city){
+  s2Locked=true; clearTimeout(window._s2timeoutHandle);
+  const dot = placeDot(city,true);
+  stormEffect();
+  const fb=document.getElementById('s2-feedback');
+  fb.textContent = `아쉬워요! ${city.name}(${city.country})의 정확한 위치를 살짝 보여드릴게요.`;
+  fb.style.color='var(--danger)';
+  setTimeout(()=>{ dot.remove(); s2Idx++; renderS2(); }, 1100);
+}
+function missS2(city){
+  wrongS2(city);
+}
+function finishStage2(){
+  document.getElementById('s2-progress').style.width='100%';
+  const total=s2Queue.length, ratio=s2Score/total;
+  const passed = ratio>=0.6;
+  if(passed){ progress.stage2=true; bestScore.stage2=Math.max(bestScore.stage2,s2Score); }
+  showResult({
+    stars: starsFor(ratio),
+    title: passed ? '2단계 통과! 3단계가 열렸어요' : '2단계 통과 실패',
+    desc: `${total}개 도시 중 ${s2Score}개의 위치를 정확히 찾았어요. (${Math.round(ratio*100)}%) ${passed?'':'60% 이상 맞히면 통과할 수 있어요. 다시 도전해보세요!'}`,
+    buttons: passed ? [
+      {label:'3단계로 이동', primary:true, onClick:startStage3},
+      {label:'여권으로', primary:false, onClick:goHome},
+    ] : [
+      {label:'다시 도전하기', primary:true, onClick:startStage2},
+      {label:'여권으로', primary:false, onClick:goHome},
+    ]
+  });
+}
+
+/* ==================== STAGE 3 : CATEGORY SORT ==================== */
+let s3Queue=[], s3Idx=0, s3Score=0, s3Mistakes=0, s3Sorted={finance:[],history:[],eco:[],industry:[]};
+function startStage3(){
+  s3Queue = shuffle(CITIES);
+  s3Idx=0; s3Score=0; s3Mistakes=0;
+  s3Sorted={finance:[],history:[],eco:[],industry:[]};
+  buildS3Buttons();
+  renderSortGrid();
+  showScreen('screen-stage3');
+  renderS3();
+}
+function buildS3Buttons(){
+  const box=document.getElementById('s3-catbtns');
+  box.innerHTML='';
+  Object.entries(CATS).forEach(([key,meta])=>{
+    const b=document.createElement('button');
+    b.className='catbtn';
+    b.style.setProperty('--c', meta.hex);
+    b.textContent = meta.label;
+    b.onclick=()=>answerS3(key,b);
+    box.appendChild(b);
+  });
+}
+function renderSortGrid(){
+  const grid=document.getElementById('s3-sortgrid');
+  grid.innerHTML='';
+  Object.entries(CATS).forEach(([key,meta])=>{
+    const col=document.createElement('div');
+    col.className='sortcol';
+    col.style.setProperty('--c', meta.hex);
+    col.innerHTML = `<h4>${meta.label}</h4><div class="chiplist" id="sort-${key}"></div>`;
+    grid.appendChild(col);
+  });
+  refreshSortChips();
+}
+function refreshSortChips(){
+  Object.entries(CATS).forEach(([key,meta])=>{
+    const list=document.getElementById(`sort-${key}`);
+    list.innerHTML='';
+    s3Sorted[key].forEach(city=>{
+      const chip=document.createElement('span');
+      chip.className='chip';
+      chip.style.setProperty('--c', meta.hex);
+      chip.textContent=`${city.name}(${city.country})`;
+      list.appendChild(chip);
+    });
+  });
+}
+function renderS3(){
+  if(s3Idx>=s3Queue.length){ finishStage3(); return; }
+  document.getElementById('s3-progress').style.width=(s3Idx/s3Queue.length*100)+'%';
+  document.getElementById('s3-score').textContent=`점수 ${s3Score} / ${s3Idx}`;
+  const city=s3Queue[s3Idx];
+  document.getElementById('s3-frame').innerHTML = photoTag(city);
+  document.getElementById('s3-name').textContent = `${city.name}(${city.country})`;
+  document.getElementById('s3-hint').textContent = '이 도시의 핵심 기능을 아래에서 골라보세요.';
+  document.querySelectorAll('#s3-catbtns .catbtn').forEach(b=>b.classList.remove('shake'));
+}
+function answerS3(key, btnEl){
+  const city=s3Queue[s3Idx];
+  if(key===city.cat){
+    s3Score++;
+    s3Sorted[key].push(city);
+    refreshSortChips();
+    celebrate();
+    document.getElementById('s3-hint').textContent='정답이에요! 다음 도시로 넘어갈게요.';
+    document.getElementById('s3-hint').style.color='var(--eco)';
+    setTimeout(()=>{ document.getElementById('s3-hint').style.color='var(--ink-dim)'; s3Idx++; renderS3(); }, 700);
+  }else{
+    s3Mistakes++;
+    btnEl.classList.add('shake');
+    stormEffect();
+    document.getElementById('s3-hint').textContent='다른 기능이에요. 도시의 특징을 다시 떠올려보고 골라보세요!';
+    document.getElementById('s3-hint').style.color='var(--danger)';
+    setTimeout(()=>btnEl.classList.remove('shake'),350);
+  }
+}
+function finishStage3(){
+  document.getElementById('s3-progress').style.width='100%';
+  const total=s3Queue.length;
+  const ratio = total/(total+s3Mistakes);
+  progress.stage3=true;
+  bestScore.stage3=Math.max(bestScore.stage3,total);
+  setTimeout(()=>{
+    showScreen('screen-complete');
+  }, 500);
+}
+
+/* ==================== INIT ==================== */
+refreshHome();
+</script>
+</body>
+</html>
